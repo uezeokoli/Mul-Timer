@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 function App() {
   const [items, setItems] = useState([])
@@ -31,22 +31,55 @@ function App() {
   }
   
   const confirmEndTime = () => {
-    const timeString = endTimeInput
+    const timeString = endTimeInput.trim()
     const now = new Date()
-    const now_string = now.toISOString().split('T')[0] // YYYY-MM-DD
-
-    const endTimeString = `${now_string} ${timeString}`
-    const endTimeObject = new Date(endTimeString)
-    
-    if (endTimeObject == "Invalid Date" ){
-      // console.log("works!")
+  
+    // Expecting format like "11:30 PM" or "10:15 AM"
+    const parts = timeString.split(' ')
+    if (parts.length !== 2) {
       window.alert("Invalid Input")
+      return
     }
-    else{
-      setEndTime(endTimeObject)
-      setEndTimeInput("")
+  
+    const [timePart, ampm] = parts
+    const [hourStr, minuteStr] = timePart.split(':')
+  
+    let hour = parseInt(hourStr, 10)
+    const minute = parseInt(minuteStr, 10)
+  
+    if (isNaN(hour) || isNaN(minute) || (ampm.toUpperCase() !== "AM" && ampm.toUpperCase() !== "PM")) {
+      window.alert("Invalid Input")
+      return
     }
+  
+    // Convert 12-hour format to 24-hour
+    if (ampm.toUpperCase() === "PM" && hour < 12) {
+      hour += 12
+    } else if (ampm.toUpperCase() === "AM" && hour === 12) {
+      hour = 0 // 12 AM is midnight (00:00 hours)
+    }
+  
+    // Create a new Date for today with the given time
+    const endTimeObject = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      hour,
+      minute,
+      0,
+      0
+    )
+  
+    // Check for validity
+    if (isNaN(endTimeObject.getTime())) {
+      window.alert("Invalid Input")
+      return
+    }
+  
+    setEndTime(endTimeObject)
+    setEndTimeInput("")
   }
+  
 
   const addHour = () => {
     setHours(hours + 1)
@@ -78,7 +111,7 @@ function App() {
     <div>
       <CurrentTime/>
       <p>End Time: {endTime ? endTime.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', hour12: true }): "End time not entered!"}</p>
-      <Table items={items}/>
+      <Table items={items} endTime={endTime}/>
       {/* <InputTime text={"time required: "}/> */}
       <div>item: <input value={item} onChange={changeItemInput} onKeyDown={keyDownAddItem}/></div>
       {/* <div>time required <input value={item} onChange={changeItemInput} onKeyDown={keyDownAddItem}/></div> */}
@@ -147,14 +180,16 @@ const Table = (props) => {
     <table>
       <thead>
         <tr>
-          <th>item</th>
-          <th>timer</th>
+          <th>Item</th>
+          <th>Timer</th>
         </tr>
         {props.items.map(item => {
           return(
             <tr key={item.name}>
-              <td >{item.name}</td>
-              <td><Timer hours={item.hours} minutes={item.minutes}/></td>
+              <td>{item.name}</td>
+              <td>
+                <Timer hours={item.hours} minutes={item.minutes} endTime={props.endTime}/>
+              </td>
             </tr>
           )
         })}
@@ -163,23 +198,50 @@ const Table = (props) => {
   )
 }
 const Timer = (props) => {
-  const [seconds, setSeconds] = useState(0)
-  const [minutes, setMinutes] = useState(((props.hours * 60) + (props.minutes)))
+  const { hours, minutes, endTime } = props
 
-  if (seconds == 0 && minutes == 0){
-    return <p>Finished!</p>
-  }
-  else if (seconds == 0){
-    setTimeout(() => setSeconds(59), 1000)
-    setTimeout(() => setMinutes(minutes - 1), 1000)
-  }
-  else {
-    setTimeout(() => setSeconds(seconds - 1), 1000)
-  }
+  // Total time required for this item in seconds
+  const totalNeededSeconds = (hours * 60 + minutes) * 60
 
-  return(
-    <p>{minutes}: {(seconds.toString().length == 1? "0": "")}{seconds}</p>
-  )
+  // use a state for the current display of the timer
+  const [display, setDisplay] = useState("")
+
+  useEffect(() => {
+    if (!endTime || endTime.toString() === "Invalid Date") {
+      setDisplay("No end time set")
+      return
+    }
+
+    const interval = setInterval(() => {
+      const now = new Date()
+      const msUntilEnd = endTime - now
+      const secondsUntilEnd = Math.floor(msUntilEnd / 1000)
+
+      // If there's more time until the end than we need, it means not started yet.
+      if (secondsUntilEnd > totalNeededSeconds) {
+        // Not time to start counting down
+        const notStartedSeconds = secondsUntilEnd - totalNeededSeconds
+        const nsMinutes = Math.floor(notStartedSeconds / 60)
+        const nsSeconds = notStartedSeconds % 60
+        setDisplay(`Not started (starts in ${nsMinutes}:${nsSeconds.toString().padStart(2, '0')})`)
+      }
+      else if (secondsUntilEnd <= 0) {
+        // Past the end time, timer finished
+        setDisplay("Finished!")
+      } else {
+        // in the countdown window
+        // secondsUntilEnd is how many seconds remain until endTime,
+        // which should exactly match the countdown left
+        const countdownMinutes = Math.floor(secondsUntilEnd / 60)
+        const countdownSeconds = secondsUntilEnd % 60
+        setDisplay(`${countdownMinutes}:${countdownSeconds.toString().padStart(2, '0')}`)
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [endTime, hours, minutes, totalNeededSeconds])
+
+  return <p>{display}</p>
 }
 
 export default App
