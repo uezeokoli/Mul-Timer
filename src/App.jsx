@@ -7,7 +7,26 @@ function App() {
   const [minutes, setMinutes] = useState(0)
   const [endTimeInput, setEndTimeInput] = useState("")
   const [endTime, setEndTime] = useState("")
-  
+
+  //compute longest time
+  useEffect(() => {
+    if (items.length === 0) return
+    // convert hours/mins into total mins then use reduce function
+    // to track maximum total minutes
+    const longestTime = items.reduce((max, item) => {
+      const totalMinutes = item.hours * 60 + item.minutes
+      return totalMinutes > max ? totalMinutes : max
+    }, 0)
+    //compute default end time
+    const now = new Date()
+    const defaultEndTime = new Date(now.getTime() + longestTime * 60 * 1000)
+    //if no end time or if defaultendtime is greater than current end time
+    //make defaultendtime curr endtime
+    if (!endTime || defaultEndTime > endTime) {
+      setEndTime(defaultEndTime)
+    }
+  }, [items, endTime])
+
   const addItem = () => {
     console.log("item: ",item)
     const itemObj = {name: item, hours: hours, minutes:minutes}
@@ -176,6 +195,7 @@ const Button  = (props) => {
 
 const Table = (props) => {
   // console.log("in table component",props.items)
+
   return(
     <table>
       <thead>
@@ -207,7 +227,8 @@ const Timer = (props) => {
   const [display, setDisplay] = useState("")
 
   useEffect(() => {
-    if (!endTime || endTime.toString() === "Invalid Date") {
+
+    if (endTime.toString() === "Invalid Date") {
       setDisplay("No end time set")
       return
     }
