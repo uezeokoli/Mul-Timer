@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 
-function App() {
+const App = () => {
   const [items, setItems] = useState([])
   const [item, setItem] = useState("")
   const [hours, setHours] = useState(0)
   const [minutes, setMinutes] = useState(0)
   const [endTimeInput, setEndTimeInput] = useState("")
   const [endTime, setEndTime] = useState("")
+  const [paused, setPaused] = useState(false)
 
   //compute longest time
   useEffect(() => {
@@ -22,7 +23,7 @@ function App() {
     const defaultEndTime = new Date(now.getTime() + longestTime * 60 * 1000)
     //if no end time or if defaultendtime is greater than current end time
     //make defaultendtime curr endtime
-    if (!endTime || defaultEndTime > endTime) {
+    if (!endTime) {
       setEndTime(defaultEndTime)
     }
   }, [items, endTime])
@@ -126,11 +127,32 @@ function App() {
       setMinutes(minutes - 1)
     }
   }
+
+  const onClickPause = () => {
+    setPaused(!paused)
+  }
+
+  if (paused && endTime) {
+    const newEndTime = new Date(
+      endTime.getFullYear(),
+      endTime.getMonth(),
+      endTime.getDate(),
+      endTime.getHours(),
+      endTime.getMinutes(),
+      endTime.getSeconds() + 1,)
+    
+    // setTimeout(() => console.log(console.log),1000)
+    setTimeout(() => setEndTime(newEndTime) ,1000)
+    
+      // console.log(endTime.toString())
+  }
+
   return (
     <div>
+      <Button text ={paused? "play timer": "pause timer"} onClick={onClickPause}/>
       <CurrentTime/>
       <p>End Time: {endTime ? endTime.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', hour12: true }): "End time not entered!"}</p>
-      <Table items={items} endTime={endTime}/>
+      <Table items={items} endTime={endTime} paused={paused}/>
       {/* <InputTime text={"time required: "}/> */}
       <div>item: <input value={item} onChange={changeItemInput} onKeyDown={keyDownAddItem}/></div>
       {/* <div>time required <input value={item} onChange={changeItemInput} onKeyDown={keyDownAddItem}/></div> */}
