@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import TimePicker from 'rc-time-picker';
 import ReactDOM from 'react-dom';
@@ -19,6 +20,10 @@ const App = () => {
   const [endTime, setEndTime] = useState(""); // Calculated or confirmed end time
   const [paused, setPaused] = useState(false); // Pause state for timers
 
+  const [hours, setHours] = useState(0);
+  const [minutes, setMinutes] = useState(0);
+
+  
   const handleTimeChange = (time) => {
     setHours(time.hour());
     setMinutes(time.minute());
@@ -59,6 +64,15 @@ const App = () => {
 
   // Function: Add a new item to the list
   const addItem = () => {
+    //if no time or item name set alert
+    if (!item.trim()) {
+      alert("Please enter a valid item name.");
+      return;
+    }
+    if (hours === 0 && minutes === 0) {
+      alert("Please select a valid time duration.");
+      return;
+    }
     const itemObj = { name: item, hours, minutes }; // Create item object
     setItems([...items, itemObj]); // Append to items list
     setItem(""); // Clear input field
@@ -78,18 +92,25 @@ const App = () => {
   const onClickPause = () => setPaused(!paused);
 
   // Adjust end time if paused
-  if (paused && endTime) {
-    const newEndTime = new Date(
-      endTime.getFullYear(),
-      endTime.getMonth(),
-      endTime.getDate(),
-      endTime.getHours(),
-      endTime.getMinutes(),
-      endTime.getSeconds() + 1
-    );
-
-    setTimeout(() => setEndTime(newEndTime), 1000); // Increment seconds
-  }
+  useEffect(() => {
+    // Only do this if paused is true and endTime is set
+    if (!paused || !endTime) return;
+  
+    const timerId = setTimeout(() => {
+      const newEndTime = new Date(
+        endTime.getFullYear(),
+        endTime.getMonth(),
+        endTime.getDate(),
+        endTime.getHours(),
+        endTime.getMinutes(),
+        endTime.getSeconds() + 1
+      );
+      setEndTime(newEndTime);
+    }, 1000);
+  
+    // Clean up the timeout when paused/endTime changes or component unmounts
+    return () => clearTimeout(timerId);
+  }, [paused, endTime]);
 
   // Rendering
   return (
