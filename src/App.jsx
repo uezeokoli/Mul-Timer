@@ -22,6 +22,7 @@ const App = () => {
 
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
+  
 
   
   const handleTimeChange = (time) => {
@@ -57,9 +58,10 @@ const App = () => {
     const defaultEndTime = new Date(now.getTime() + longestTime * 60 * 1000);
 
     // Update endTime if it is not already set
-    if (!endTime) {
+    if (!paused && (!endTime || defaultEndTime.getTime() > endTime.getTime())) {
       setEndTime(defaultEndTime);
     }
+    
   }, [items, endTime]);
 
   // Function: Add a new item to the list
@@ -73,9 +75,13 @@ const App = () => {
       alert("Please select a valid time duration.");
       return;
     }
+    
     const itemObj = { name: item, hours, minutes }; // Create item object
     setItems([...items, itemObj]); // Append to items list
     setItem(""); // Clear input field
+
+    
+
   };
 
   // Function: Add item on Enter key press
