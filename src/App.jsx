@@ -155,7 +155,7 @@ const App = () => {
 // Input Time Component: Time Picker for selecting time
 const InputTime = ({ onTimeChange }) => (
   <div>
-    Select Time: <TimePicker onChange={onTimeChange} defaultValue={moment()} showSecond={false} />
+    Select Time: <TimePicker onChange={onTimeChange} defaultValue={moment('00:00', 'HH:mm')} showSecond={false} />
   </div>
 );
 
